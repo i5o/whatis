@@ -170,7 +170,10 @@ class Game(Gtk.DrawingArea):
 
         if not self.finished:
             if not self._id:
-                self._id = self.connect('button-press-event', self.check_option)
+                def enable_click():
+                    self._id = self.connect('button-press-event',
+                        self.check_option)
+                GObject.timeout_add(1000, enable_click)
 
         self._parent.get_window().set_cursor(None)
 
