@@ -235,6 +235,8 @@ class Game(Gtk.DrawingArea):
                 break
 
         if option == self.current_option:
+            cursor = Gdk.Cursor.new(Gdk.CursorType.WATCH)
+            self._parent.get_window().set_cursor(cursor)
             self.disconnect(self._id)
             self._id = None
             self.finished = True
