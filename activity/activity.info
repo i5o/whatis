@@ -1,0 +1,10 @@
+[Activity]
+name = What is
+bundle_id = org.sugarlabs.whatis
+exec = sugar-activity activity.WhatIs
+icon = activity-whatis
+activity_version = 1
+show_launcher = yes
+single_instance = yes
+license = GPLv2+
+summary = activity for test art4apps api
