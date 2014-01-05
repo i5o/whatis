@@ -171,7 +171,7 @@ class Game(Gtk.DrawingArea):
                 def enable_click():
                     self._id = self.connect('button-press-event',
                         self.check_option)
-                GObject.timeout_add(2000, enable_click)
+                GObject.timeout_add(1500, enable_click)
 
     def draw_images(self, ctx, load_images=None):
         self.options = {}
