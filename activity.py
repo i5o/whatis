@@ -121,6 +121,8 @@ class Game(Gtk.DrawingArea):
                         Gdk.EventMask.BUTTON_PRESS_MASK |
                         Gdk.EventMask.POINTER_MOTION_HINT_MASK)
 
+        self._players = []
+
         locale = os.environ["LANG"]
         locale = locale.split("_")[0]
 
@@ -140,11 +142,12 @@ class Game(Gtk.DrawingArea):
         if not image:
             return
 
+        self.mute_all()
         sound = self._sounds[image]
         player = Player()
         player.load(sound)
         player.player.set_state(Gst.State.PLAYING)
-        del(player)
+        self._players.append(player)
 
         self.is_the_correct(x, y)
 
@@ -225,22 +228,24 @@ class Game(Gtk.DrawingArea):
         else:
             sound = os.path.join(sounds, "wrong.ogg")
 
-        def internal_callback(sound):
-            player = Player()
-            player.load(sound)
+        player = Player()
+        player.load(sound)
+        self._players.append(player)
+        def internal_callback(sound, player):
+            self.mute_all()
             player.player.set_state(Gst.State.PLAYING)
-            del(player)
 
-        GObject.timeout_add(1500, internal_callback, sound)
+        GObject.timeout_add(1500, internal_callback, sound, player)
 
         if option == self.current_option:
             GObject.timeout_add(2000, self.new_game)
 
     def sound_current_game(self, *kwargs):
+        self.mute_all()
         player = Player()
         player.load(self._sounds[self.current_option])
         player.player.set_state(Gst.State.PLAYING)
-        del(player)
+        self._players.append(player)
 
     def new_game(self, *kwargs):
         self.current_images = None
@@ -284,6 +289,10 @@ class Game(Gtk.DrawingArea):
             except Exception:
                 continue
 
+    def mute_all(self):
+        for player in self._players:
+            player.player.set_state(Gst.State.NULL)
+            self._players.remove(player)
 
 class Player:
     def __init__(self):
@@ -293,4 +302,5 @@ class Player:
     def load(self, path):
         uri = "file://%s" % path
         self.player.set_property("uri", uri)
+        self.player.set_property("volume", 1.0)
         self.player.set_state(Gst.State.READY)
