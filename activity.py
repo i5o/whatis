@@ -154,8 +154,6 @@ class Game(Gtk.DrawingArea):
         self.is_the_correct(x, y)
 
     def do_draw(self, ctx):
-        cursor = Gdk.Cursor.new(Gdk.CursorType.WATCH)
-        self._parent.get_window().set_cursor(cursor)
         square = Gdk.Rectangle()
         square.x = 0
         square.y = 0
@@ -173,9 +171,9 @@ class Game(Gtk.DrawingArea):
                 def enable_click():
                     self._id = self.connect('button-press-event',
                         self.check_option)
-                GObject.timeout_add(1000, enable_click)
+                    self._parent.get_window().set_cursor(None)
+                GObject.timeout_add(2000, enable_click)
 
-        self._parent.get_window().set_cursor(None)
 
     def draw_images(self, ctx, load_images=None):
         self.options = {}
