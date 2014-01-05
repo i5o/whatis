@@ -234,9 +234,10 @@ class Game(Gtk.DrawingArea):
                 break
 
         if option == self.current_option:
+            self.disconnect(self._id)
+            self._id = None
             self.finished = True
             self.queue_draw()
-            self.set_sensitive(False)
             GObject.timeout_add(2000, self.new_game)
 
     def sound_current_game(self, *kwargs):
@@ -247,8 +248,9 @@ class Game(Gtk.DrawingArea):
         self._players.append(player)
 
     def new_game(self, widget=None):
-        self.disconnect(self._id)
-        self._id = None
+        if widget:
+            self.disconnect(self._id)
+            self._id = None
 
         def internal_callback():
             self.current_images = None
