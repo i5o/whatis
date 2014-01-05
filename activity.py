@@ -171,9 +171,7 @@ class Game(Gtk.DrawingArea):
                 def enable_click():
                     self._id = self.connect('button-press-event',
                         self.check_option)
-                    self._parent.get_window().set_cursor(None)
                 GObject.timeout_add(2000, enable_click)
-
 
     def draw_images(self, ctx, load_images=None):
         self.options = {}
@@ -260,6 +258,7 @@ class Game(Gtk.DrawingArea):
             self.queue_draw()
             self.finished = False
             self.set_sensitive(True)
+            self._parent.get_window().set_cursor(None)
 
         cursor = Gdk.Cursor.new(Gdk.CursorType.WATCH)
         self._parent.get_window().set_cursor(cursor)
