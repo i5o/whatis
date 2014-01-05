@@ -172,10 +172,13 @@ class Game(Gtk.DrawingArea):
 
             ctx.select_font_face("Sans", cairo.FONT_SLANT_NORMAL,
                 cairo.FONT_WEIGHT_NORMAL)
-            ctx.set_font_size(150)
+            ctx.set_font_size(100)
 
-            ctx.move_to(50, (Gdk.Screen.height() / 2))
-            ctx.show_text(_("Loading..."))
+            ctx.move_to(300, (Gdk.Screen.height() / 2) - 50)
+            ctx.show_text(_("¡Correct!"))
+            ctx.move_to(100, (Gdk.Screen.height() / 2) + 50)
+            ctx.set_font_size(80)
+            ctx.show_text(_("Loading new game..."))
 
         if not self.finished:
             self.draw_images(ctx, self.current_images)
@@ -253,11 +256,11 @@ class Game(Gtk.DrawingArea):
         player.player.set_state(Gst.State.PLAYING)
         self._players.append(player)
 
-    def new_game(self, *kwargs):
+    def new_game(self, widget=None):
         def internal_callback():
             self.current_images = None
-            self.finished = False
             self.queue_draw()
+            self.finished = False
             self.set_sensitive(True)
         cursor = Gdk.Cursor.new(Gdk.CursorType.WATCH)
         self._parent.get_window().set_cursor(cursor)
