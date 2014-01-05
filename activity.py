@@ -135,7 +135,7 @@ class Game(Gtk.DrawingArea):
 
         self.set_language(locale)
 
-        self.connect("button-press-event", self.check_option)
+        self._id = self.connect("button-press-event", self.check_option)
 
     def check_option(self, widget, event):
         x = int(event.x)
@@ -154,9 +154,8 @@ class Game(Gtk.DrawingArea):
         self.is_the_correct(x, y)
 
     def do_draw(self, ctx):
-        if self.finished:
-            cursor = Gdk.Cursor.new(Gdk.CursorType.WATCH)
-            self._parent.get_window().set_cursor(cursor)
+        cursor = Gdk.Cursor.new(Gdk.CursorType.WATCH)
+        self._parent.get_window().set_cursor(cursor)
         square = Gdk.Rectangle()
         square.x = 0
         square.y = 0
@@ -167,22 +166,13 @@ class Game(Gtk.DrawingArea):
         Gdk.cairo_rectangle(ctx, square)
         ctx.fill()
 
-        if self.finished:
-            ctx.set_source_rgb(0.1, 0.1, 0.1)
-
-            ctx.select_font_face("Sans", cairo.FONT_SLANT_NORMAL,
-                cairo.FONT_WEIGHT_NORMAL)
-            ctx.set_font_size(100)
-
-            ctx.move_to(300, (Gdk.Screen.height() / 2) - 50)
-            ctx.show_text(_("¡Correct!"))
-            ctx.move_to(100, (Gdk.Screen.height() / 2) + 50)
-            ctx.set_font_size(80)
-            ctx.show_text(_("Loading new game..."))
+        self.draw_images(ctx, self.current_images)
 
         if not self.finished:
-            self.draw_images(ctx, self.current_images)
-            self._parent.get_window().set_cursor(None)
+            if not self._id:
+                self._id = self.connect('button-press-event', self.check_option)
+
+        self._parent.get_window().set_cursor(None)
 
     def draw_images(self, ctx, load_images=None):
         self.options = {}
@@ -257,11 +247,15 @@ class Game(Gtk.DrawingArea):
         self._players.append(player)
 
     def new_game(self, widget=None):
+        self.disconnect(self._id)
+        self._id = None
+
         def internal_callback():
             self.current_images = None
             self.queue_draw()
             self.finished = False
             self.set_sensitive(True)
+
         cursor = Gdk.Cursor.new(Gdk.CursorType.WATCH)
         self._parent.get_window().set_cursor(cursor)
         GObject.idle_add(internal_callback)
