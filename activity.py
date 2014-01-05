@@ -46,7 +46,7 @@ class WhatIs(activity.Activity):
     def __init__(self, handle):
         activity.Activity.__init__(self, handle)
 
-        self.game = Game()
+        self.game = Game(self)
 
         self.build_toolbar()
         self.set_canvas(self.game)
@@ -113,7 +113,7 @@ class WhatIs(activity.Activity):
 
 
 class Game(Gtk.DrawingArea):
-    def __init__(self):
+    def __init__(self, parent):
         Gtk.DrawingArea.__init__(self)
         self.add_events(Gdk.EventMask.BUTTON_MOTION_MASK |
                         Gdk.EventMask.POINTER_MOTION_MASK |
@@ -121,7 +121,9 @@ class Game(Gtk.DrawingArea):
                         Gdk.EventMask.BUTTON_PRESS_MASK |
                         Gdk.EventMask.POINTER_MOTION_HINT_MASK)
 
+        self._parent = parent
         self._players = []
+        self.finished = False
 
         locale = os.environ["LANG"]
         locale = locale.split("_")[0]
@@ -151,17 +153,33 @@ class Game(Gtk.DrawingArea):
 
         self.is_the_correct(x, y)
 
-    def do_draw(self, context):
+    def do_draw(self, ctx):
+        if self.finished:
+            cursor = Gdk.Cursor.new(Gdk.CursorType.WATCH)
+            self._parent.get_window().set_cursor(cursor)
         square = Gdk.Rectangle()
         square.x = 0
         square.y = 0
         square.width = Gdk.Screen.width()
         square.height = Gdk.Screen.height()
-        Gdk.cairo_set_source_color(context, Gdk.color_parse("white"))
-        Gdk.cairo_rectangle(context, square)
-        context.fill()
+        color = Gdk.color_parse("white")
+        Gdk.cairo_set_source_color(ctx, color)
+        Gdk.cairo_rectangle(ctx, square)
+        ctx.fill()
 
-        self.draw_images(context, self.current_images)
+        if self.finished:
+            ctx.set_source_rgb(0.1, 0.1, 0.1)
+
+            ctx.select_font_face("Sans", cairo.FONT_SLANT_NORMAL,
+                cairo.FONT_WEIGHT_NORMAL)
+            ctx.set_font_size(150)
+
+            ctx.move_to(50, (Gdk.Screen.height() / 2))
+            ctx.show_text(_("Loading..."))
+
+        if not self.finished:
+            self.draw_images(ctx, self.current_images)
+            self._parent.get_window().set_cursor(None)
 
     def draw_images(self, ctx, load_images=None):
         self.options = {}
@@ -222,22 +240,10 @@ class Game(Gtk.DrawingArea):
                 (y >= data["min_y"] and y <= data["max_y"]):
                 break
 
-        sounds = os.path.join(activity.get_bundle_path(), "sounds")
         if option == self.current_option:
-            sound = os.path.join(sounds, "correct.ogg")
-        else:
-            sound = os.path.join(sounds, "wrong.ogg")
-
-        player = Player()
-        player.load(sound)
-        self._players.append(player)
-        def internal_callback(sound, player):
-            self.mute_all()
-            player.player.set_state(Gst.State.PLAYING)
-
-        GObject.timeout_add(1500, internal_callback, sound, player)
-
-        if option == self.current_option:
+            self.finished = True
+            self.queue_draw()
+            self.set_sensitive(False)
             GObject.timeout_add(2000, self.new_game)
 
     def sound_current_game(self, *kwargs):
@@ -248,8 +254,14 @@ class Game(Gtk.DrawingArea):
         self._players.append(player)
 
     def new_game(self, *kwargs):
-        self.current_images = None
-        self.queue_draw()
+        def internal_callback():
+            self.current_images = None
+            self.finished = False
+            self.queue_draw()
+            self.set_sensitive(True)
+        cursor = Gdk.Cursor.new(Gdk.CursorType.WATCH)
+        self._parent.get_window().set_cursor(cursor)
+        GObject.idle_add(internal_callback)
 
     def change_language(self, widget):
         it = widget.get_active_iter()
@@ -293,6 +305,7 @@ class Game(Gtk.DrawingArea):
         for player in self._players:
             player.player.set_state(Gst.State.NULL)
             self._players.remove(player)
+
 
 class Player:
     def __init__(self):
