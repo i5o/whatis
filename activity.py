@@ -21,7 +21,7 @@ import gi
 import os
 import random
 
-gi.require_version('Gst', '1.0')
+gi.require_version('Gst', "1.0")
 
 from art4apps import Art4Apps
 from gettext import gettext as _
@@ -60,13 +60,13 @@ class WhatIs(activity.Activity):
         toolbar.insert(activity_button, -1)
         toolbar.insert(Gtk.SeparatorToolItem(), -1)
 
-        new_game = ToolButton('media-playlist-repeat')
+        new_game = ToolButton("media-playlist-repeat")
         new_game.set_tooltip(_("New game"))
-        new_game.connect('clicked', self.game.new_game)
+        new_game.connect("clicked", self.game.new_game)
 
         play_sound = ToolButton("media-playback-start")
         play_sound.set_tooltip(_("Replay level objetive"))
-        play_sound.connect('clicked', self.game.sound_current_game)
+        play_sound.connect("clicked", self.game.sound_current_game)
 
         toolbar.insert(new_game, -1)
         toolbar.insert(play_sound, -1)
@@ -79,23 +79,23 @@ class WhatIs(activity.Activity):
         locale = os.environ["LANG"]
         locale = locale.split("_")[0]
 
-        if locale == 'en':
+        if locale == "en":
             current = 0
-        elif locale == 'fr':
+        elif locale == "fr":
             current = 1
-        elif locale == 'es':
+        elif locale == "es":
             current = 2
         else:
             current = 0
 
         combo = ToolComboBox()
-        combo.set_property('label-text', 'Language:')
-        combo.combo.append_item('en', _('English'), icon_name='en')
-        combo.combo.append_item('fr', _('French'), icon_name='fr')
-        combo.combo.append_item('es', _('Spanish'), icon_name='es')
+        combo.set_property("label-text", "Language:")
+        combo.combo.append_item("en", _("English"), icon_name="en")
+        combo.combo.append_item("fr", _("French"), icon_name="fr")
+        combo.combo.append_item("es", _("Spanish"), icon_name="es")
 
         combo.combo.set_active(current)
-        combo.combo.connect('changed', self.game.change_language)
+        combo.combo.connect("changed", self.game.change_language)
 
         toolbar.insert(separator, -1)
         toolbar.insert(combo, -1)
@@ -124,10 +124,10 @@ class Game(Gtk.DrawingArea):
         locale = os.environ["LANG"]
         locale = locale.split("_")[0]
 
-        if locale == 'en' or locale == 'es' or locale == 'fr':
+        if locale == "en" or locale == "es" or locale == "fr":
             pass
         else:
-            locale = 'en'
+            locale = "en"
 
         self.set_language(locale)
 
@@ -154,7 +154,7 @@ class Game(Gtk.DrawingArea):
         square.y = 0
         square.width = Gdk.Screen.width()
         square.height = Gdk.Screen.height()
-        Gdk.cairo_set_source_color(context, Gdk.color_parse('white'))
+        Gdk.cairo_set_source_color(context, Gdk.color_parse("white"))
         Gdk.cairo_rectangle(context, square)
         context.fill()
 
@@ -182,10 +182,10 @@ class Game(Gtk.DrawingArea):
             surface = cairo.ImageSurface(cairo.FORMAT_ARGB32,
                      w, w)
 
-            self.options[image] = {'min_x': x,
-                                    'max_x': x + w,
-                                    'min_y': y,
-                                    'max_y': y + w}
+            self.options[image] = {"min_x": x,
+                                    "max_x": x + w,
+                                    "min_y": y,
+                                    "max_y": y + w}
 
             x += separation
             ct = cairo.Context(surface)
@@ -207,23 +207,23 @@ class Game(Gtk.DrawingArea):
     def get_image_pressed(self, x, y):
         for option in self.options:
             data = self.options[option]
-            if (x >= data['min_x'] and x <= data['max_x']) and \
-                (y >= data['min_y'] and y <= data['max_y']):
+            if (x >= data["min_x"] and x <= data["max_x"]) and \
+                (y >= data["min_y"] and y <= data["max_y"]):
                 break
         return option
 
     def is_the_correct(self, x, y):
         for option in self.options:
             data = self.options[option]
-            if (x >= data['min_x'] and x <= data['max_x']) and \
-                (y >= data['min_y'] and y <= data['max_y']):
+            if (x >= data["min_x"] and x <= data["max_x"]) and \
+                (y >= data["min_y"] and y <= data["max_y"]):
                 break
 
-        sounds = os.path.join(activity.get_bundle_path(), 'sounds')
+        sounds = os.path.join(activity.get_bundle_path(), "sounds")
         if option == self.current_option:
-            sound = os.path.join(sounds, 'correct.ogg')
+            sound = os.path.join(sounds, "correct.ogg")
         else:
-            sound = os.path.join(sounds, 'wrong.ogg')
+            sound = os.path.join(sounds, "wrong.ogg")
 
         def internal_callback(sound):
             player = Player()
@@ -263,7 +263,7 @@ class Game(Gtk.DrawingArea):
         for image in images:
             path = art.get_image_filename(image)
             if os.path.exists(path):
-                new_images.append(path.encode('utf-8'))
+                new_images.append(path.encode("utf-8"))
 
         self._sounds = {}
         for image in new_images:
@@ -292,5 +292,5 @@ class Player:
 
     def load(self, path):
         uri = "file://%s" % path
-        self.player.set_property('uri', uri)
+        self.player.set_property("uri", uri)
         self.player.set_state(Gst.State.READY)
