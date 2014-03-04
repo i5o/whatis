@@ -14,7 +14,7 @@
 
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  021101301, USA.
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  021101301, USA
 
 import cairo
 import gi
@@ -40,6 +40,12 @@ from sugar3.graphics.toolbutton import ToolButton
 from sugar3.graphics.toolcombobox import ToolComboBox
 
 Gst.init([])
+
+IMAGES_OK = ["flower_good.png", "gnu_good.png", "lion_good.png",
+             "smiley_good.png", "tux_good.png"]
+
+IMAGES_BAD = ["flower_bad.png", "gnu_bad.png", "lion_bad.png",
+              "smiley_bad.png", "tux_bad.png"]
 
 
 class WhatIs(activity.Activity):
@@ -123,6 +129,7 @@ class Game(Gtk.DrawingArea):
 
         self._parent = parent
         self._players = []
+        self._face = None
         self.finished = False
 
         locale = os.environ["LANG"]
@@ -166,11 +173,18 @@ class Game(Gtk.DrawingArea):
 
         self.draw_images(ctx, self.current_images)
 
+        if self._face:
+            self.draw_face(self._face)
+
         if not self.finished:
             if not self._id:
                 def enable_click():
                     self._id = self.connect('button-press-event',
-                        self.check_option)
+                                            self.check_option)
+                    if self._face:
+                        self._face = None
+                        self.queue_draw()
+
                 GObject.timeout_add(1500, enable_click)
 
     def draw_images(self, ctx, load_images=None):
@@ -179,7 +193,7 @@ class Game(Gtk.DrawingArea):
         max_images = Gdk.Screen.width() / 210
         if not load_images:
             self.current_images = images = random.sample(self._images,
-                max_images)
+                                                         max_images)
             self.current_option = random.choice(images)
         else:
             images = load_images
@@ -192,13 +206,12 @@ class Game(Gtk.DrawingArea):
 
         for image in images:
             pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_size(image, w, w)
-            surface = cairo.ImageSurface(cairo.FORMAT_ARGB32,
-                     w, w)
+            surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, w, w)
 
             self.options[image] = {"min_x": x,
-                                    "max_x": x + w,
-                                    "min_y": y,
-                                    "max_y": y + w}
+                                   "max_x": x + w,
+                                   "min_y": y,
+                                   "max_y": y + w}
 
             x += separation
             ct = cairo.Context(surface)
@@ -221,7 +234,7 @@ class Game(Gtk.DrawingArea):
         for option in self.options:
             data = self.options[option]
             if (x >= data["min_x"] and x <= data["max_x"]) and \
-                (y >= data["min_y"] and y <= data["max_y"]):
+               (y >= data["min_y"] and y <= data["max_y"]):
                 break
         return option
 
@@ -229,17 +242,51 @@ class Game(Gtk.DrawingArea):
         for option in self.options:
             data = self.options[option]
             if (x >= data["min_x"] and x <= data["max_x"]) and \
-                (y >= data["min_y"] and y <= data["max_y"]):
+               (y >= data["min_y"] and y <= data["max_y"]):
                 break
 
+        cursor = Gdk.Cursor.new(Gdk.CursorType.WATCH)
+        self._parent.get_window().set_cursor(cursor)
+        self.disconnect(self._id)
+        self._id = None
+
         if option == self.current_option:
-            cursor = Gdk.Cursor.new(Gdk.CursorType.WATCH)
-            self._parent.get_window().set_cursor(cursor)
-            self.disconnect(self._id)
-            self._id = None
             self.finished = True
+            image = random.choice(IMAGES_OK)
             self.queue_draw()
-            GObject.timeout_add(2000, self.new_game)
+        else:
+            image = random.choice(IMAGES_BAD)
+
+        image_path = os.path.join(activity.get_bundle_path(),
+                                  "images", image)
+
+        self._face = image_path
+        self.draw_face(self._face)
+
+        GObject.timeout_add(2000, self.new_game)
+
+    def draw_face(self, image_path):
+        pixbuf = GdkPixbuf.Pixbuf.new_from_file(image_path)
+
+        pixbuf_w = pixbuf.get_width()
+        pixbuf_h = pixbuf.get_height()
+
+        x = (Gdk.Screen.width() / 2) - (pixbuf_w / 2)
+        y = (Gdk.Screen.height() / 2) - (pixbuf_h / 2)
+        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, pixbuf_w, pixbuf_h)
+
+        ct = cairo.Context(surface)
+        Gdk.cairo_set_source_pixbuf(ct, pixbuf, 0, 0)
+        ct.paint()
+
+        ctx = self.get_property('window').cairo_create()
+
+        ctx.save()
+        ctx.rectangle(x, y, pixbuf_w, pixbuf_h)
+        ctx.clip()
+        ctx.set_source_surface(surface, x, y)
+        ctx.paint()
+        ctx.restore()
 
     def sound_current_game(self, *kwargs):
         self.mute_all()
