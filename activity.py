@@ -23,7 +23,16 @@ import random
 
 gi.require_version('Gst', "1.0")
 
-from art4apps import Art4Apps
+try:
+    from art4apps import Art4Apps
+except ImportError:
+    import LocalArt4Apps
+    from LocalArt4Apps import Art4Apps
+    module_path = LocalArt4Apps.__path__[0]
+    LocalArt4Apps.DATA_PATH = module_path + "/data/"
+    LocalArt4Apps.IMAGES_PATH = module_path + "/images/"
+    LocalArt4Apps.AUDIO_PATH = module_path + "/audio/"
+
 from gettext import gettext as _
 
 from gi.repository import Gdk
@@ -49,6 +58,7 @@ IMAGES_BAD = ["flower_bad.png", "gnu_bad.png", "lion_bad.png",
 
 
 class WhatIs(activity.Activity):
+
     def __init__(self, handle):
         activity.Activity.__init__(self, handle)
 
@@ -119,6 +129,7 @@ class WhatIs(activity.Activity):
 
 
 class Game(Gtk.DrawingArea):
+
     def __init__(self, parent):
         Gtk.DrawingArea.__init__(self)
         self.add_events(Gdk.EventMask.BUTTON_MOTION_MASK |
@@ -356,6 +367,7 @@ class Game(Gtk.DrawingArea):
 
 
 class Player:
+
     def __init__(self):
         self.player = Gst.ElementFactory.make("playbin", "player")
         self.player.set_state(Gst.State.READY)
