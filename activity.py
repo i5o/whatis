@@ -282,8 +282,11 @@ class Game(Gtk.DrawingArea):
         pixbuf_w = pixbuf.get_width()
         pixbuf_h = pixbuf.get_height()
 
-        x = (Gdk.Screen.width() / 2) - (pixbuf_w / 2)
-        y = (Gdk.Screen.height() / 2) - (pixbuf_h / 2)
+        screen_width = Gdk.Screen.width()
+        screen_height = Gdk.Screen.height()
+
+        x = (screen_width / 2) - (pixbuf_w / 2)
+        y = (screen_height / 2) - (pixbuf_h / 2)
         surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, pixbuf_w, pixbuf_h)
 
         ct = cairo.Context(surface)
@@ -293,6 +296,11 @@ class Game(Gtk.DrawingArea):
         ctx = self.get_property('window').cairo_create()
 
         ctx.save()
+
+        ctx.set_source_rgba(5, 4, 4, 0.9)
+        ctx.rectangle(0, 0, screen_width, screen_height)
+        ctx.paint()
+
         ctx.rectangle(x, y, pixbuf_w, pixbuf_h)
         ctx.clip()
         ctx.set_source_surface(surface, x, y)
@@ -312,6 +320,7 @@ class Game(Gtk.DrawingArea):
             self._id = None
 
         def internal_callback():
+            self._face = None
             self.current_images = None
             self.queue_draw()
             self.finished = False
