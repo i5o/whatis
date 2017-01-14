@@ -46,7 +46,7 @@ from sugar3.activity.widgets import ActivityButton
 from sugar3.activity.widgets import StopButton
 from sugar3.graphics.toolbarbox import ToolbarBox
 from sugar3.graphics.toolbutton import ToolButton
-from sugar3.graphics.toolcombobox import ToolComboBox
+from sugar3.graphics.radiotoolbutton import RadioToolButton
 
 Gst.init([])
 
@@ -62,6 +62,7 @@ class WhatIs(activity.Activity):
     def __init__(self, handle):
         activity.Activity.__init__(self, handle)
 
+        self.word_label = Gtk.Label()
         self.game = Game(self)
 
         self.build_toolbar()
@@ -76,12 +77,12 @@ class WhatIs(activity.Activity):
         toolbar.insert(activity_button, -1)
         toolbar.insert(Gtk.SeparatorToolItem(), -1)
 
-        new_game = ToolButton("media-playlist-repeat")
-        new_game.set_tooltip(_("New game"))
+        new_game = ToolButton("hear")
+        new_game.set_tooltip(_("Hear new hint"))
         new_game.connect("clicked", self.game.new_game)
 
-        play_sound = ToolButton("media-playback-start")
-        play_sound.set_tooltip(_("Replay level objetive"))
+        play_sound = ToolButton("repeat")
+        play_sound.set_tooltip(_("Repeat hint"))
         play_sound.connect("clicked", self.game.sound_current_game)
 
         toolbar.insert(new_game, -1)
@@ -92,33 +93,43 @@ class WhatIs(activity.Activity):
         separator.set_expand(True)
         toolbar.insert(separator, -1)
 
-        locale = os.environ["LANG"]
-        locale = locale.split("_")[0]
-
-        if locale == "en":
-            current = 0
-        elif locale == "fr":
-            current = 1
-        elif locale == "es":
-            current = 2
-        else:
-            current = 0
-
-        combo = ToolComboBox()
-        combo.set_property("label-text", "Language:")
-        combo.combo.append_item("en", _("English"), icon_name="en")
-        combo.combo.append_item("fr", _("French"), icon_name="fr")
-        combo.combo.append_item("es", _("Spanish"), icon_name="es")
-
-        combo.combo.set_active(current)
-        combo.combo.connect("changed", self.game.change_language)
-
-        toolbar.insert(separator, -1)
-        toolbar.insert(combo, -1)
+        item = Gtk.ToolItem()
+        item.add(self.word_label)
+        toolbar.insert(item, -1)
 
         separator = Gtk.SeparatorToolItem()
         separator.props.draw = False
         separator.set_expand(True)
+        toolbar.insert(separator, -1)
+
+        en_button = RadioToolButton(icon_name='en')
+        en_button.set_tooltip(_("English"))
+        en_button.connect("clicked", self.game.change_language)
+        toolbar.insert(en_button, -1)
+
+        fr_button = RadioToolButton(icon_name='fr', group=en_button)
+        fr_button.set_tooltip(_("French"))
+        fr_button.connect("clicked", self.game.change_language)
+        toolbar.insert(fr_button, -1)
+
+        es_button = RadioToolButton(icon_name='es', group=en_button)
+        es_button.set_tooltip(_("Spanish"))
+        es_button.connect("clicked", self.game.change_language)
+        toolbar.insert(es_button, -1)
+
+        locale = os.environ["LANG"]
+        locale = locale.split("_")[0]
+
+        if locale == "en":
+            en_button.set_active(True)
+        elif locale == "fr":
+            fr_button.set_active(True)
+        elif locale == "es":
+            es_button.set_active(True)
+        else:
+            en_button.set_active(True)
+
+        separator = Gtk.SeparatorToolItem()
         toolbar.insert(separator, -1)
 
         stopbtn = StopButton(self)
@@ -140,8 +151,10 @@ class Game(Gtk.DrawingArea):
 
         self._parent = parent
         self._players = []
+        self.strings = {}
         self._face = None
         self.finished = False
+        self.current_language = None
 
         locale = os.environ["LANG"]
         locale = locale.split("_")[0]
@@ -206,6 +219,7 @@ class Game(Gtk.DrawingArea):
             self.current_images = images = random.sample(self._images,
                                                          max_images)
             self.current_option = random.choice(images)
+            self._parent.word_label.set_text(self.strings[self.current_option])
         else:
             images = load_images
 
@@ -264,10 +278,13 @@ class Game(Gtk.DrawingArea):
         if option == self.current_option:
             self.finished = True
             image = random.choice(IMAGES_OK)
+            message = "☺ ☺ ☺ ☺ ☺"
             self.queue_draw()
         else:
             image = random.choice(IMAGES_BAD)
+            message = "☹ ☹ ☹ ☹ ☹"
 
+        self._parent.word_label.set_text(message)
         image_path = os.path.join(activity.get_bundle_path(),
                                   "images", image)
 
@@ -331,16 +348,17 @@ class Game(Gtk.DrawingArea):
         self._parent.get_window().set_cursor(cursor)
         GObject.idle_add(internal_callback)
 
-    def change_language(self, widget):
-        it = widget.get_active_iter()
-        model = widget.get_model()
-        value = model.get_value(it, 0)
-        self.set_language(value)
-        self.queue_draw()
+    def change_language(self, button):
+        lang = button.get_icon_name()
+        if self.current_language != lang:
+            self.set_language(lang)
+            self.queue_draw()
 
     def set_language(self, locale):
         self.options = {}
         self.current_images = None
+        self.current_language = locale
+        self.strings = {}
 
         art = Art4Apps()
         images = art.get_words()
@@ -349,6 +367,11 @@ class Game(Gtk.DrawingArea):
             path = art.get_image_filename(image)
             if os.path.exists(path):
                 new_images.append(path.encode("utf-8"))
+
+                translation = art.get_translation(image, locale)
+                if not translation:
+                    translation = image
+                self.strings[path] = translation
 
         self._sounds = {}
         for image in new_images:

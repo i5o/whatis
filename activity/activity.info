@@ -7,4 +7,4 @@ activity_version = 1
 show_launcher = yes
 single_instance = yes
 license = GPLv2+
-summary = activity for test art4apps api
+summary = guess the image by listening to its name
